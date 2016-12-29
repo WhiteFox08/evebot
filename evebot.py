@@ -25,11 +25,7 @@ headers =  {'User-Agent' : 'https://zkillboard.com/', 'Maintainer':'whitefox008@
 
 client = discord.Client()
 
-def is_me(m):
-    return m.author == client.user
-
 @client.event
-
 async def on_ready():
     print('Logged in as')
     print(client.user.name)
@@ -44,16 +40,11 @@ async def fetch(session, url):
 async def killboard_task():
     await client.wait_until_login()
 
-    channel = discord.Object(killmail_channel_ID)
-
-    compkm = '' #store last km in here
-
     print('Killboard_task() -> starting url fetch')
     async with aiohttp.ClientSession(headers=headers) as session:
         json_payload = await fetch(session, api_filter_url)
         jsonresponce = json.loads(json_payload)
         initfetch = jsonresponce[0]['killID'] #get initkm
-
 
     while not client.is_closed:
 
@@ -78,23 +69,13 @@ async def killboard_task():
                     test = test + killurl
                 await client.send_message(discord.Object(id=killmail_channel_ID), test)
 
-
         await asyncio.sleep(100) #lets not fucking slam the server with request 50 is pretty fucking moderate
-
 
 @client.event
 async def on_member_join(member):
     server = member.server
     fmt = 'Welcome {0.mention} to {1.name}! to verify your account, create an api using this predefined key and then type !verify in chat! \n http://community.eveonline.com/support/api-key/CreatePredefined?accessMask=50331648'
     await client.send_message(server, fmt.format(member, server))
-
-@client.event
-
-async def on_message(message):
-    if message.content.startswith('!purge'):
-        deleted = await client.purge_from(message.channel, limit=100,check=is_me)
-        await client.send_message(message.channel, 'Deleted {} message(s)'.format(len(deleted)))
-
 
 @client.event
 async def on_message(message):
@@ -119,7 +100,7 @@ async def on_message(message):
             async with session.get('https://api.eveonline.com/account/characters.xml.aspx?keyID=%s&vCode=%s' % (k, v)) as resp:
                 text = await resp.text()
                 if allianceID in text:
-                    Pass = await client.edit_message(msg,'✅ **ACCESS GRANTED** Welcome to Discord {0.author.mention}!'.format(message))
+                    Pass = await client.edit_message(msg,'✅ **ACCESS GRANTED** Welcome to Wormageddon {0.author.mention}!'.format(message))
                     await asyncio.sleep(15)
                     await client.delete_message(Pass)
 
@@ -139,8 +120,3 @@ async def on_message(message):
 
 client.loop.create_task(killboard_task())
 client.run(token)
-
-
-
-
-
