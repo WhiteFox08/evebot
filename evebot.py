@@ -137,7 +137,7 @@ async def on_message(message):
                     await client.delete_message(Fail)
 
 
-#client.loop.create_task(killboard_task())
+client.loop.create_task(killboard_task())
 client.run(token)
 
 
