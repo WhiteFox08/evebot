@@ -46,9 +46,8 @@ async def killboard_task():
         jsonresponce = json.loads(json_payload)
         initfetch = jsonresponce[0]['killID'] #get initkm
 
-    while not client.is_closed:
+        while not client.is_closed:
 
-        async with aiohttp.ClientSession(headers=headers) as session:
             json_payload = await fetch(session, 'https://zkillboard.com/api/afterKillID/%s/json/' % (initfetch))        #https://zkillboard.com/api/allianceID/99006805/afterKillID/%s/xml/
             print('Killboard_task() -> Fetching new Killmails')
             jsonresponce = json.loads(json_payload)
@@ -69,7 +68,8 @@ async def killboard_task():
                     test = test + killurl
                 await client.send_message(discord.Object(id=killmail_channel_ID), test)
 
-        await asyncio.sleep(100) #lets not fucking slam the server with request 50 is pretty fucking moderate
+            await asyncio.sleep(100)  # lets not fucking slam the server with request 50 is pretty fucking moderate
+
 
 @client.event
 async def on_member_join(member):
@@ -81,15 +81,13 @@ async def on_member_join(member):
 async def on_message(message):
     if message.content.startswith('!verify'):
         await client.delete_message(message)
-        msg = await client.send_message(message.channel, '❗ **Paste your KeyID** {0.author.mention}'.format(message))
+        msg = await client.send_message(message.author, '❗ **Paste your KeyID** {0.author.mention}'.format(message))
         keyid = await client.wait_for_message(author=message.author)
         k = keyid.content
-        await client.delete_message(keyid)
 
         await client.edit_message(msg, '❗ **Paste your Vcode {0.author.mention}**'.format(message))
         vcode = await client.wait_for_message(author=message.author)
         v = vcode.content
-        await client.delete_message(vcode)
 
         await client.edit_message(msg, '⭕ **Verifying API! {0.author.mention}**'.format(message))
         await asyncio.sleep(3)
