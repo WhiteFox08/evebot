@@ -19,11 +19,10 @@ headers =  {'User-Agent' : 'https://zkillboard.com/', 'Maintainer':'whitefox008@
 VerifedR = discord.Object(id=VerifedID)
 FailedR = discord.Object(id=FailedID)
 NoapiR = discord.Object(id=NoapiID)
+mlist = []
 
 conn = sqlite3.connect('api.db')
-
 c = conn.cursor()
-
 try:
     c.execute('''CREATE TABLE api
                 (disid text UNIQUE,
@@ -33,13 +32,7 @@ try:
 except:
     print('DB -> Table already created!')
 
-
-mlist = []
-
 client = discord.Client()
-
-
-
 
 async def fetch(session, url):
     async with session.get(url) as response:
@@ -53,13 +46,14 @@ async def killboard_task():
         initfetch = jsonresponce[0]['killID'] #get initkm
 
         while not client.is_closed:
-            json_payload = await fetch(session, 'https://zkillboard.com/allianceID/99006805/api/afterKillID/{0}/json/'.format(initfetch))
-            jsonresponce = json.loads(json_payload)
             try:
+                json_payload = await fetch(session,'https://zkillboard.com/allianceID/99006805/api/afterKillID/{0}/json/'.format(initfetch))
+                jsonresponce = json.loads(json_payload)
                 initfetch = jsonresponce[0]['killID']  # keep it going lads
 
             except:
-                pass
+                await asyncio.sleep(50)
+                continue
 
             else:
                 killurl = ''
@@ -79,7 +73,6 @@ async def update_members():
                     continue
 
                 try:
-                    print(member.name, member.id)
                     c.execute("update api set disname = \'{0}\' where disid = \'{1}\'".format(member.name,member.id))
                     conn.commit()
                 except sqlite3.DatabaseError as e:
@@ -91,6 +84,7 @@ async def update_members():
                     conn.commit()
 
                 except sqlite3.DatabaseError as e:
+                    print('DB -> {0}\'s DISID WAS NOT UNIQUE: {1}'.format(member.name,e))
                     pass
 
                 c.execute("select keyid from api where disid = \'{0}\'".format(member.id))
@@ -124,12 +118,13 @@ async def update_members():
 @client.event
 async def on_ready():
     await client.change_presence(game=discord.Game(name='Rolling out of home since Dominion'))
+    
 @client.event
 async def on_member_join(member):
-
     server = member.server
     fmt = 'Welcome {0.mention} to {1.name}! to verify your account, create an api using this predefined key and then type !verify in chat! \n http://community.eveonline.com/support/api-key/CreatePredefined?accessMask=50331648'
     await client.send_message(server, fmt.format(member, server))
+    
 @client.event
 async def on_message(message):
     if message.content.startswith('!verify'):
@@ -157,7 +152,7 @@ async def on_message(message):
                         conn.commit()
 
                     except sqlite3.DatabaseError as e:
-                        print('DB -> Raised error when adding {0}\'s keyid and vcode: --> '.format(message.author),e)
+                        print('DB -> Raised error when adding {0}\'s keyid and vcode: --> {1} '.format(message.author, e))
                         conn.rollback()
 
                     await asyncio.sleep(15)
