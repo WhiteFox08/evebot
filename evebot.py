@@ -27,9 +27,9 @@ c = conn.cursor()
 try:
     c.execute('''CREATE TABLE api
                 (disid text UNIQUE,
-                 disname text,
-                 keyid text,
-                 vcode text)''')
+                 disname text ,
+                 keyid text UNIQUE,
+                 vcode text UNIQUE)''')
 except:
     print('DB -> Table already created!')
 
@@ -47,48 +47,36 @@ async def fetch(session, url):
 
 async def killboard_task():
     await client.wait_until_login()
-
-    print('Killboard_task() -> starting url fetch')
     async with aiohttp.ClientSession(headers=headers) as session:
         json_payload = await fetch(session, api_filter_url)
         jsonresponce = json.loads(json_payload)
         initfetch = jsonresponce[0]['killID'] #get initkm
 
         while not client.is_closed:
-
-            json_payload = await fetch(session, 'https://zkillboard.com/api/afterKillID/%s/json/' % (initfetch))        #https://zkillboard.com/api/allianceID/99006805/afterKillID/%s/xml/
-            print('Killboard_task() -> Fetching new Killmails')
+            json_payload = await fetch(session, 'https://zkillboard.com/allianceID/99006805/api/afterKillID/{0}/json/'.format(initfetch))
             jsonresponce = json.loads(json_payload)
-
             try:
-
                 initfetch = jsonresponce[0]['killID']  # keep it going lads
 
             except:
-
-                print('Killboard_task() -> JSON returned no kills')
                 pass
 
             else:
-                test = ''
+                killurl = ''
                 for item in jsonresponce:
                     killurl = 'https://zkillboard.com/kill/' + str(item['killID']) + ' \n'
-                    test = test + killurl
-                await client.send_message(discord.Object(id=killmail_channel_ID), test)
+                    killurl = killurl + killurl
+                await client.send_message(discord.Object(id=killmail_channel_ID), killurl)
 
             await asyncio.sleep(50)  # lets not fucking slam the server with request 50 is pretty fucking moderate
 
 async def update_members():
     await client.wait_until_ready()
     async with aiohttp.ClientSession() as session:
-
         while not client.is_closed:
-
             for member in client.get_all_members():
-
                 if member.name == client.user.name:  #Remove thotty
                     continue
-
 
                 try:
                     print(member.name, member.id)
@@ -130,11 +118,8 @@ async def update_members():
                         try: await client.replace_roles(member, FailedR)
                         except: print('DISCORD BOT -> {0} FAILED TO ADD ROLE'.format(member.name))
 
-                    await asyncio.sleep(5)
-
-            print('Loop finished')
-
-            await asyncio.sleep(300)
+                await asyncio.sleep(3)
+            await asyncio.sleep(3600)
 
 @client.event
 async def on_ready():
@@ -161,12 +146,13 @@ async def on_message(message):
         await asyncio.sleep(3)
 
         async with aiohttp.ClientSession() as session:
-            async with session.get('https://api.eveonline.com/account/characters.xml.aspx?keyID=%s&vCode=%s' % (k, v)) as resp:
+            async with session.get('https://api.eveonline.com/account/characters.xml.aspx?keyID={0}&vCode={1}'.format(k, v)) as resp:
                 text = await resp.text()
                 if allianceID in text:
                     Pass = await client.edit_message(msg,'✅ **ACCESS GRANTED** Welcome to Wormageddon {0.author.mention}!'.format(message))
-                    try:
+                    await client.replace_roles(message.author, VerifedR)
 
+                    try:
                         c.execute("UPDATE api SET keyid = \'{0}\', vcode = \'{1}\'  WHERE disid = \'{2}\'".format(k,v,message.author.id))
                         conn.commit()
 
