@@ -3,8 +3,10 @@ A really shitty discordpy bot that post Killmails from zkillboard and verifies A
 
 
 Dependencies:
+```
   discord
   aysyncio
   aiohttp
   sqlite3
   
+```
